@@ -12,6 +12,10 @@ const app = express();
 app.use(cors({ origin: config.clientUrl }));
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.json({ message: 'Collaboration Workspace API' });
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
