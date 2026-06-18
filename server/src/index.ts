@@ -6,6 +6,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import http from 'http';
 import { config } from './config';
+import authRoutes from './routes/authRoutes';
 
 const app = express();
 
@@ -19,6 +20,8 @@ app.get('/', (_req, res) => {
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
+
+app.use('/api/auth', authRoutes);
 
 const server = http.createServer(app);
 
