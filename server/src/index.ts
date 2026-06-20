@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes';
 import workspaceRoutes from './routes/workspaceRoutes';
 import channelRoutes from './routes/channelRoutes';
 import messageRoutes from './routes/messageRoutes';
+import { initSockets } from './sockets';
 
 const app = express();
 
@@ -42,8 +43,9 @@ const server = http.createServer(app);
 
 mongoose
   .connect(config.mongoUri)
-  .then(() => {
+  .then(async () => {
     console.log('✅ MongoDB connected');
+    await initSockets(server);
     server.listen(config.port, () => {
       console.log(`🚀 Server running on http://localhost:${config.port}`);
     });
