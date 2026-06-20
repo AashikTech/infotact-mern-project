@@ -1,7 +1,7 @@
 import dns from 'dns';
 dns.setServers(['8.8.8.8', '8.8.4.4']);
 
-import express from 'express';
+import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import http from 'http';
@@ -34,10 +34,12 @@ app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
 
-app.use((err: Error, _req: any, res: any, _next: any) => {
-  console.error(err.stack);
-  res.status(500).json({ error: err.message || 'Internal server error' });
-});
+const errorHandler: ErrorRequestHandler = (err, _req, res, _next) => {
+  console.error(err);
+  res.status(err.status || 500).json({ error: err.message || 'Server error' });
+};
+
+app.use(errorHandler);
 
 const server = http.createServer(app);
 
