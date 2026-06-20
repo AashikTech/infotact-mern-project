@@ -3,11 +3,14 @@ import http from 'http';
 import { config } from '../config';
 import { verifyToken } from '../utils/jwt';
 import { registerChatHandlers } from './chatHandlers';
+import { attachRedisAdapter } from './redisAdapter';
 
 export async function initSockets(httpServer: http.Server) {
   const io = new Server(httpServer, {
     cors: { origin: config.clientUrl },
   });
+
+  await attachRedisAdapter(io);
 
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
