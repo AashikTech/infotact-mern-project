@@ -7,6 +7,9 @@ import mongoose from 'mongoose';
 import http from 'http';
 import { config } from './config';
 import authRoutes from './routes/authRoutes';
+import workspaceRoutes from './routes/workspaceRoutes';
+import channelRoutes from './routes/channelRoutes';
+import messageRoutes from './routes/messageRoutes';
 
 const app = express();
 
@@ -22,6 +25,18 @@ app.get('/health', (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/channels', channelRoutes);
+app.use('/api/messages', messageRoutes);
+
+app.use((_req, res) => {
+  res.status(404).json({ error: 'Route not found' });
+});
+
+app.use((err: Error, _req: any, res: any, _next: any) => {
+  console.error(err.stack);
+  res.status(500).json({ error: err.message || 'Internal server error' });
+});
 
 const server = http.createServer(app);
 
