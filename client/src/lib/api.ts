@@ -1,0 +1,32 @@
+import axios from 'axios'
+import type { Workspace, Channel, Message } from '../types'
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '',
+})
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
+export const getWorkspaces = () =>
+  api.get<Workspace[]>('/api/workspaces').then((r) => r.data)
+
+export const createWorkspace = (name: string) =>
+  api.post<Workspace>('/api/workspaces', { name }).then((r) => r.data)
+
+export const joinWorkspace = (inviteCode: string) =>
+  api.post<Workspace>('/api/workspaces/join', { inviteCode }).then((r) => r.data)
+
+export const getChannels = (workspaceId: string) =>
+  api.get<Channel[]>(`/api/channels/workspace/${workspaceId}`).then((r) => r.data)
+
+export const createChannel = (name: string, workspaceId: string) =>
+  api.post<Channel>('/api/channels', { name, workspaceId }).then((r) => r.data)
+
+export const getMessages = (channelId: string) =>
+  api.get<Message[]>(`/api/messages/${channelId}`).then((r) => r.data)

@@ -11,21 +11,18 @@ export async function createWorkspace(req: Request, res: Response) {
       return res.status(400).json({ error: 'Workspace name is required' });
     }
 
-    const inviteCode = crypto.randomBytes(4).toString('hex');
     const userId = (req as any).userId;
 
-    const workspace = await Workspace.create({
-      name,
-      owner: userId,
-      members: [userId],
-      inviteCode,
-    });
+    const inviteCode = crypto.randomBytes(4).toString('hex');
 
+    const workspace = await Workspace.create({ name, owner: userId, members: [userId], inviteCode });
     await Channel.create({ name: 'general', workspaceId: workspace._id });
 
     res.status(201).json(clean(workspace));
   } catch (err) {
-    res.status(500).json({ error: 'Server error' });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('❌ createWorkspace:', msg);
+    res.status(500).json({ error: msg });
   }
 }
 
