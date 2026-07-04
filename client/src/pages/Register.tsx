@@ -16,7 +16,7 @@ export default function Register() {
     setError('')
     try {
       await register(name, email, password)
-      navigate('/dashboard')
+      navigate('/')
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error || 'Registration failed')

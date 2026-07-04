@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { disconnectSocket } from '../lib/socket'
 import type { Workspace, Channel } from '../types'
 
 interface SidebarProps {
@@ -7,6 +9,7 @@ interface SidebarProps {
   channels: Channel[]
   selectedWorkspace: Workspace | null
   selectedChannel: Channel | null
+  connected: boolean
   onSelectWorkspace: (ws: Workspace) => void
   onSelectChannel: (ch: Channel) => void
   onCreateWorkspace: (name: string) => Promise<void>
@@ -15,11 +18,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  workspaces, channels, selectedWorkspace, selectedChannel,
+  workspaces, channels, selectedWorkspace, selectedChannel, connected,
   onSelectWorkspace, onSelectChannel,
   onCreateWorkspace, onJoinWorkspace, onCreateChannel,
 }: SidebarProps) {
   const { user, logout } = useAuth()
+  const navigate = useNavigate()
   const [showNewWs, setShowNewWs] = useState(false)
   const [showJoin, setShowJoin] = useState(false)
   const [showNewCh, setShowNewCh] = useState(false)
@@ -54,7 +58,10 @@ export default function Sidebar({
   return (
     <div className="w-64 bg-gray-900 text-white flex flex-col shrink-0">
       <div className="p-4 border-b border-gray-700">
-        <div className="font-semibold">{user?.name}</div>
+        <div className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="font-semibold">{user?.name}</span>
+        </div>
         <div className="text-sm text-gray-400">{user?.email}</div>
       </div>
 
@@ -203,7 +210,7 @@ export default function Sidebar({
       </div>
 
       <div className="p-4 border-t border-gray-700">
-        <button onClick={logout} className="text-sm text-gray-400 hover:text-white transition-colors">
+        <button onClick={() => { disconnectSocket(); logout(); navigate('/login') }} className="text-sm text-gray-400 hover:text-white transition-colors">
           Sign out
         </button>
       </div>

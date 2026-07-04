@@ -15,7 +15,7 @@ export default function Login() {
     setError('')
     try {
       await login(email, password)
-      navigate('/dashboard')
+      navigate('/')
     } catch (err) {
       if (axios.isAxiosError(err)) {
         setError(err.response?.data?.error || 'Login failed')
