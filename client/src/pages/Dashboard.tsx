@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '../context/AuthContext'
 import Sidebar from '../components/Sidebar'
+import ChatWindow from '../components/ChatWindow'
 import { getWorkspaces, createWorkspace, joinWorkspace, getChannels, createChannel } from '../lib/api'
 import type { Workspace, Channel } from '../types'
 
 export default function Dashboard() {
+  const { user } = useAuth()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
@@ -48,11 +51,18 @@ export default function Dashboard() {
         onJoinWorkspace={handleJoinWorkspace}
         onCreateChannel={handleCreateChannel}
       />
-      <main className="flex-1 flex items-center justify-center bg-gray-100 text-gray-500">
-        {selectedChannel ? (
-          <span># {selectedChannel.name}</span>
+      <main className="flex-1 flex flex-col">
+        {selectedChannel && user ? (
+          <>
+            <div className="p-4 border-b border-gray-200 bg-white">
+              <h2 className="font-semibold text-gray-800"># {selectedChannel.name}</h2>
+            </div>
+            <ChatWindow channelId={selectedChannel.id} user={user} />
+          </>
         ) : (
-          <span>Select a channel</span>
+          <div className="flex-1 flex items-center justify-center bg-gray-100 text-gray-500">
+            Select a channel
+          </div>
         )}
       </main>
     </div>
