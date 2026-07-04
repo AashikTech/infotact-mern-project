@@ -74,8 +74,8 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-white">
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+    <div className="flex-1 flex flex-col min-h-0 bg-white">
+      <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
         {messages.map((msg) => {
           const senderId = typeof msg.senderId === 'string' ? msg.senderId : msg.senderId.id
           return (

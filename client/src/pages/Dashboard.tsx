@@ -82,7 +82,7 @@ export default function Dashboard() {
         onJoinWorkspace={handleJoinWorkspace}
         onCreateChannel={handleCreateChannel}
       />
-      <main className="flex-1 flex flex-col">
+      <main className="flex-1 flex flex-col overflow-hidden">
         {selectedChannel && user ? (
           <>
             <div className="px-4 py-3 border-b border-gray-200 bg-white">
