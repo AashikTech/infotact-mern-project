@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react'
-import { socket, connectSocket } from '../lib/socket'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { getSocket } from '../lib/socket'
 import { getMessages } from '../lib/api'
 import MessageBubble from './MessageBubble'
 import type { User, Message } from '../types'
@@ -12,31 +12,53 @@ interface ChatWindowProps {
 export default function ChatWindow({ channelId, user }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
+  const [typingUser, setTypingUser] = useState<string | null>(null)
   const bottomRef = useRef<HTMLDivElement>(null)
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const socket = getSocket()
+
+  const sendTypingStop = useCallback(() => {
+    socket.emit('typing:stop', { channelId })
+  }, [channelId, socket])
+
+  const emitTyping = useCallback(() => {
+    socket.emit('typing:start', { channelId, name: user.name })
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(sendTypingStop, 1500)
+  }, [channelId, user.name, sendTypingStop, socket])
 
   useEffect(() => {
     setMessages([])
+    setTypingUser(null)
 
     getMessages(channelId).then(setMessages)
-
-    connectSocket()
 
     if (!socket.connected) {
       socket.connect()
     }
     socket.emit('channel:join', channelId)
 
-    const handler = (msg: Message) => {
+    const onMessage = (msg: Message) => {
       if (msg.channelId === channelId) {
-        setMessages((prev) => [...prev, msg])
+        setMessages((prev) => prev.some((m) => m.id === msg.id) ? prev : [...prev, msg])
       }
     }
-    socket.on('chat:message', handler)
+    const onTypingStart = ({ name }: { name: string }) => setTypingUser(name)
+    const onTypingStop = () => setTypingUser(null)
+
+    socket.on('chat:message', onMessage)
+    socket.on('typing:start', onTypingStart)
+    socket.on('typing:stop', onTypingStop)
 
     return () => {
-      socket.off('chat:message', handler)
+      socket.off('chat:message', onMessage)
+      socket.off('typing:start', onTypingStart)
+      socket.off('typing:stop', onTypingStop)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      sendTypingStop()
     }
-  }, [channelId])
+  }, [channelId, sendTypingStop, socket])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -47,6 +69,8 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     if (!text.trim()) return
     socket.emit('chat:message', { channelId, content: text })
     setText('')
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+    sendTypingStop()
   }
 
   return (
@@ -61,11 +85,15 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
         <div ref={bottomRef} />
       </div>
 
+      {typingUser && (
+        <div className="px-4 py-1 text-sm text-gray-400 italic">{typingUser} is typing...</div>
+      )}
+
       <form onSubmit={send} className="p-4 border-t border-gray-200">
         <div className="flex gap-2">
           <input
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => { setText(e.target.value); emitTyping() }}
             placeholder="Type a message..."
             className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />

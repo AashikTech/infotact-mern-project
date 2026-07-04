@@ -89,7 +89,7 @@ export default function Sidebar({
                 value={wsName}
                 onChange={(e) => setWsName(e.target.value)}
                 placeholder="Workspace name"
-                className="w-full p-1.5 text-sm text-gray-900 rounded mb-1"
+                className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                 autoFocus
               />
               <div className="flex gap-1">
@@ -109,7 +109,7 @@ export default function Sidebar({
                 value={inviteCode}
                 onChange={(e) => setInviteCode(e.target.value)}
                 placeholder="Invite code"
-                className="w-full p-1.5 text-sm text-gray-900 rounded mb-1"
+                className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                 autoFocus
               />
               <div className="flex gap-1">
@@ -135,6 +135,7 @@ export default function Sidebar({
                 }`}
               >
                 <span># {ws.name}</span>
+                <span className="text-xs text-gray-500 ml-1">{ws.inviteCode}</span>
               </button>
             ))}
             {workspaces.length === 0 && (
@@ -165,7 +166,7 @@ export default function Sidebar({
                   value={chName}
                   onChange={(e) => setChName(e.target.value)}
                   placeholder="Channel name"
-                  className="w-full p-1.5 text-sm text-gray-900 rounded mb-1"
+                  className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                   autoFocus
                 />
                 <div className="flex gap-1">
