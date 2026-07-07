@@ -35,26 +35,36 @@ export default function Dashboard() {
 
     getWorkspaces()
       .then((ws) => {
+        console.log('[Dashboard] Workspaces loaded:', ws)
         setWorkspaces(ws)
         setLoading(false)
 
         const savedWsId = localStorage.getItem(STORAGE_KEYS.workspace)
+        console.log('[Dashboard] Saved workspace ID:', savedWsId)
         if (savedWsId) {
           const savedWs = ws.find((w) => w.id === savedWsId)
+          console.log('[Dashboard] Found saved workspace:', savedWs)
           if (savedWs) {
             setSelectedWorkspace(savedWs)
             getChannels(savedWs.id).then((chs) => {
+              console.log('[Dashboard] Channels loaded:', chs)
               setChannels(chs)
               const savedChId = localStorage.getItem(STORAGE_KEYS.channel)
               if (savedChId) {
                 const savedCh = chs.find((ch) => ch.id === savedChId)
                 if (savedCh) setSelectedChannel(savedCh)
               }
-            }).catch(() => setChannels([]))
+            }).catch((err) => {
+              console.error('[Dashboard] Error loading channels:', err)
+              setChannels([])
+            })
           }
         }
       })
-      .catch(() => setLoading(false))
+      .catch((err) => {
+        console.error('[Dashboard] Error loading workspaces:', err)
+        setLoading(false)
+      })
 
     return () => {
       socket.off('connect', onConnect)
@@ -63,14 +73,17 @@ export default function Dashboard() {
   }, [])
 
   const handleSelectWorkspace = useCallback(async (ws: Workspace) => {
+    console.log('[Dashboard] Selecting workspace:', ws)
     setSelectedWorkspace(ws)
     setSelectedChannel(null)
     localStorage.setItem(STORAGE_KEYS.workspace, ws.id)
     localStorage.removeItem(STORAGE_KEYS.channel)
     try {
       const chs = await getChannels(ws.id)
+      console.log('[Dashboard] Channels fetched:', chs)
       setChannels(chs)
-    } catch {
+    } catch (err) {
+      console.error('[Dashboard] Error fetching channels:', err)
       setChannels([])
     }
   }, [])
@@ -88,6 +101,7 @@ export default function Dashboard() {
     setCreating(true)
     try {
       const ws = await createWorkspace(name)
+      console.log('[Dashboard] Workspace created:', ws)
       setWorkspaces((prev) => [...prev, ws])
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create workspace'
@@ -101,6 +115,7 @@ export default function Dashboard() {
     setCreating(true)
     try {
       const ws = await joinWorkspace(inviteCode)
+      console.log('[Dashboard] Workspace joined:', ws)
       setWorkspaces((prev) => {
         if (prev.some((w) => w.id === ws.id)) return prev
         return [...prev, ws]
@@ -117,6 +132,7 @@ export default function Dashboard() {
     setCreating(true)
     try {
       const ch = await createChannel(name, workspaceId)
+      console.log('[Dashboard] Channel created:', ch)
       setChannels((prev) => [...prev, ch])
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create channel'
