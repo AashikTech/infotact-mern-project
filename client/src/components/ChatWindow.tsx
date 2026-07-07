@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { getSocket } from '../lib/socket'
-import { getMessages } from '../lib/api'
+import { getMessages, uploadFile } from '../lib/api'
 import MessageBubble from './MessageBubble'
-import type { User, Message } from '../types'
+import type { User, Message, Attachment } from '../types'
 
 interface ChatWindowProps {
   channelId: string
@@ -13,8 +13,13 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
   const [messages, setMessages] = useState<Message[]>([])
   const [text, setText] = useState('')
   const [typingUser, setTypingUser] = useState<string | null>(null)
+  const [pendingFiles, setPendingFiles] = useState<File[]>([])
+  const [uploading, setUploading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const dragCounterRef = useRef(0)
+  const [isDragging, setIsDragging] = useState(false)
 
   const socket = getSocket()
 
@@ -31,6 +36,7 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
   useEffect(() => {
     setMessages([])
     setTypingUser(null)
+    setPendingFiles([])
 
     getMessages(channelId).then(setMessages)
 
@@ -64,17 +70,97 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
-  const send = (e: React.FormEvent) => {
+  const handleFiles = (files: FileList | File[]) => {
+    const arr = Array.from(files).slice(0, 5)
+    setPendingFiles((prev) => [...prev, ...arr].slice(0, 5))
+  }
+
+  const removePendingFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const handleDragEnter = (e: React.DragEvent) => {
     e.preventDefault()
-    if (!text.trim()) return
-    socket.emit('chat:message', { channelId, content: text })
-    setText('')
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    sendTypingStop()
+    e.stopPropagation()
+    dragCounterRef.current++
+    if (e.dataTransfer.types.includes('Files')) {
+      setIsDragging(true)
+    }
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current--
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current = 0
+    setIsDragging(false)
+    if (e.dataTransfer.files.length > 0) {
+      handleFiles(e.dataTransfer.files)
+    }
+  }
+
+  const send = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!text.trim() && pendingFiles.length === 0) return
+
+    setUploading(true)
+    let attachments: Attachment[] = []
+
+    try {
+      if (pendingFiles.length > 0) {
+        const results = await Promise.all(pendingFiles.map((f) => uploadFile(f)))
+        attachments = results
+      }
+
+      socket.emit('chat:message', {
+        channelId,
+        content: text,
+        attachments: attachments.length > 0 ? attachments : undefined,
+      })
+      setText('')
+      setPendingFiles([])
+    } catch {
+      alert('Failed to upload files. Please try again.')
+    } finally {
+      setUploading(false)
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+      sendTypingStop()
+    }
+  }
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-white">
+    <div
+      className="flex-1 flex flex-col min-h-0 bg-white relative"
+      onDragEnter={handleDragEnter}
+      onDragLeave={handleDragLeave}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+    >
+      {isDragging && (
+        <div className="absolute inset-0 z-10 bg-indigo-50 border-2 border-dashed border-indigo-400 flex items-center justify-center">
+          <div className="text-indigo-600 text-lg font-semibold">Drop files here</div>
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto min-h-0 p-4 space-y-2">
         {messages.map((msg) => {
           const senderId = typeof msg.senderId === 'string' ? msg.senderId : msg.senderId.id
@@ -89,19 +175,58 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
         <div className="px-4 py-1 text-sm text-gray-400 italic">{typingUser} is typing...</div>
       )}
 
+      {pendingFiles.length > 0 && (
+        <div className="px-4 py-2 border-t border-gray-200 flex flex-wrap gap-2">
+          {pendingFiles.map((file, i) => (
+            <div key={i} className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-1.5 text-sm">
+              <span className="truncate max-w-[150px]">{file.name}</span>
+              <span className="text-gray-400 text-xs">{formatSize(file.size)}</span>
+              <button
+                type="button"
+                onClick={() => removePendingFile(i)}
+                className="text-gray-500 hover:text-red-500 ml-1"
+              >
+                x
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <form onSubmit={send} className="p-4 border-t border-gray-200">
         <div className="flex gap-2">
           <input
+            type="file"
+            ref={fileInputRef}
+            className="hidden"
+            multiple
+            onChange={(e) => {
+              if (e.target.files) handleFiles(e.target.files)
+              e.target.value = ''
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="p-3 text-gray-500 hover:text-indigo-600 hover:bg-gray-100 rounded-lg transition-colors"
+            title="Attach files"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+          </button>
+          <input
             value={text}
             onChange={(e) => { setText(e.target.value); emitTyping() }}
-            placeholder="Type a message..."
+            placeholder="Type a message... (Markdown supported)"
             className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
           />
           <button
             type="submit"
-            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors"
+            disabled={uploading || (!text.trim() && pendingFiles.length === 0)}
+            className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Send
+            {uploading ? 'Sending...' : 'Send'}
           </button>
         </div>
       </form>

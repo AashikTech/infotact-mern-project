@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Workspace, Channel, Message } from '../types'
+import type { Workspace, Channel, Message, Attachment } from '../types'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
@@ -30,3 +30,11 @@ export const createChannel = (name: string, workspaceId: string) =>
 
 export const getMessages = (channelId: string) =>
   api.get<Message[]>(`/api/messages/${channelId}`).then((r) => r.data)
+
+export const uploadFile = (file: File) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return api.post<Attachment>('/api/messages/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then((r) => r.data)
+}

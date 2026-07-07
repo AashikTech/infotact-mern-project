@@ -9,12 +9,17 @@ export function registerChatHandlers(io: Server, socket: Socket) {
     console.log(`🔌 ${(socket as any).userId} joined channel ${channelId}`);
   });
 
-  socket.on('chat:message', async ({ channelId, content }: { channelId: string; content: string }) => {
+  socket.on('chat:message', async ({ channelId, content, attachments }: {
+    channelId: string;
+    content: string;
+    attachments?: { url: string; filename: string; mimetype: string; size: number }[];
+  }) => {
     try {
       const msg = await Message.create({
         content,
         senderId: (socket as any).userId,
         channelId,
+        attachments: attachments || [],
       });
       const populated = await msg.populate('senderId', 'name');
       io.to(channelId).emit('chat:message', clean(populated));

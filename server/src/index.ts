@@ -5,6 +5,7 @@ import express, { ErrorRequestHandler } from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import http from 'http';
+import path from 'path';
 import { config } from './config';
 import authRoutes from './routes/authRoutes';
 import workspaceRoutes from './routes/workspaceRoutes';
@@ -17,6 +18,7 @@ const app = express();
 
 app.use(cors({ origin: config.clientUrl }));
 app.use(express.json());
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 app.get('/', (_req, res) => {
   res.json({ message: 'Collaboration Workspace API' });

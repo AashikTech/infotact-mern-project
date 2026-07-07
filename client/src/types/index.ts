@@ -1,3 +1,10 @@
+export interface Attachment {
+  url: string
+  filename: string
+  mimetype: string
+  size: number
+}
+
 export interface User {
   id: string
   name: string
@@ -23,5 +30,6 @@ export interface Message {
   content: string
   senderId: string | { id: string; name: string }
   channelId: string
+  attachments?: Attachment[]
   createdAt: string
 }
