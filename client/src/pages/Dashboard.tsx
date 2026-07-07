@@ -6,6 +6,11 @@ import { getSocket } from '../lib/socket'
 import { getWorkspaces, createWorkspace, joinWorkspace, getChannels, createChannel } from '../lib/api'
 import type { Workspace, Channel } from '../types'
 
+const STORAGE_KEYS = {
+  workspace: 'selectedWorkspaceId',
+  channel: 'selectedChannelId',
+} as const
+
 export default function Dashboard() {
   const { user } = useAuth()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
@@ -29,7 +34,26 @@ export default function Dashboard() {
     socket.on('disconnect', onDisconnect)
 
     getWorkspaces()
-      .then((ws) => { setWorkspaces(ws); setLoading(false) })
+      .then((ws) => {
+        setWorkspaces(ws)
+        setLoading(false)
+
+        const savedWsId = localStorage.getItem(STORAGE_KEYS.workspace)
+        if (savedWsId) {
+          const savedWs = ws.find((w) => w.id === savedWsId)
+          if (savedWs) {
+            setSelectedWorkspace(savedWs)
+            getChannels(savedWs.id).then((chs) => {
+              setChannels(chs)
+              const savedChId = localStorage.getItem(STORAGE_KEYS.channel)
+              if (savedChId) {
+                const savedCh = chs.find((ch) => ch.id === savedChId)
+                if (savedCh) setSelectedChannel(savedCh)
+              }
+            }).catch(() => setChannels([]))
+          }
+        }
+      })
       .catch(() => setLoading(false))
 
     return () => {
@@ -41,11 +65,22 @@ export default function Dashboard() {
   const handleSelectWorkspace = useCallback(async (ws: Workspace) => {
     setSelectedWorkspace(ws)
     setSelectedChannel(null)
+    localStorage.setItem(STORAGE_KEYS.workspace, ws.id)
+    localStorage.removeItem(STORAGE_KEYS.channel)
     try {
       const chs = await getChannels(ws.id)
       setChannels(chs)
     } catch {
       setChannels([])
+    }
+  }, [])
+
+  const handleSelectChannel = useCallback((ch: Channel | null) => {
+    setSelectedChannel(ch)
+    if (ch) {
+      localStorage.setItem(STORAGE_KEYS.channel, ch.id)
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.channel)
     }
   }, [])
 
@@ -112,7 +147,7 @@ export default function Dashboard() {
         connected={connected}
         creating={creating}
         onSelectWorkspace={handleSelectWorkspace}
-        onSelectChannel={setSelectedChannel}
+        onSelectChannel={handleSelectChannel}
         onCreateWorkspace={handleCreateWorkspace}
         onJoinWorkspace={handleJoinWorkspace}
         onCreateChannel={handleCreateChannel}
