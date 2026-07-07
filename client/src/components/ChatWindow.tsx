@@ -112,7 +112,7 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     }
   }
 
-  const send = async (e: React.FormEvent) => {
+  const send = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault()
     if (!text.trim() && pendingFiles.length === 0) return
 
@@ -215,11 +215,18 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
               <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
             </svg>
           </button>
-          <input
+          <textarea
             value={text}
             onChange={(e) => { setText(e.target.value); emitTyping() }}
-            placeholder="Type a message... (Markdown supported)"
-            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                send(e)
+              }
+            }}
+            placeholder="Type a message... (Markdown supported, Shift+Enter for new line)"
+            rows={1}
+            className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />
           <button
             type="submit"

@@ -14,6 +14,7 @@ export default function Dashboard() {
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
   const [channels, setChannels] = useState<Channel[]>([])
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null)
+  const [creating, setCreating] = useState(false)
 
   useEffect(() => {
     const socket = getSocket()
@@ -27,7 +28,9 @@ export default function Dashboard() {
     socket.on('connect', onConnect)
     socket.on('disconnect', onDisconnect)
 
-    getWorkspaces().then((ws) => { setWorkspaces(ws); setLoading(false) })
+    getWorkspaces()
+      .then((ws) => { setWorkspaces(ws); setLoading(false) })
+      .catch(() => setLoading(false))
 
     return () => {
       socket.off('connect', onConnect)
@@ -38,23 +41,54 @@ export default function Dashboard() {
   const handleSelectWorkspace = useCallback(async (ws: Workspace) => {
     setSelectedWorkspace(ws)
     setSelectedChannel(null)
-    const chs = await getChannels(ws.id)
-    setChannels(chs)
+    try {
+      const chs = await getChannels(ws.id)
+      setChannels(chs)
+    } catch {
+      setChannels([])
+    }
   }, [])
 
   const handleCreateWorkspace = useCallback(async (name: string) => {
-    const ws = await createWorkspace(name)
-    setWorkspaces((prev) => [...prev, ws])
+    setCreating(true)
+    try {
+      const ws = await createWorkspace(name)
+      setWorkspaces((prev) => [...prev, ws])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create workspace'
+      alert(message)
+    } finally {
+      setCreating(false)
+    }
   }, [])
 
   const handleJoinWorkspace = useCallback(async (inviteCode: string) => {
-    const ws = await joinWorkspace(inviteCode)
-    setWorkspaces((prev) => [...prev, ws])
+    setCreating(true)
+    try {
+      const ws = await joinWorkspace(inviteCode)
+      setWorkspaces((prev) => {
+        if (prev.some((w) => w.id === ws.id)) return prev
+        return [...prev, ws]
+      })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to join workspace'
+      alert(message)
+    } finally {
+      setCreating(false)
+    }
   }, [])
 
   const handleCreateChannel = useCallback(async (name: string, workspaceId: string) => {
-    const ch = await createChannel(name, workspaceId)
-    setChannels((prev) => [...prev, ch])
+    setCreating(true)
+    try {
+      const ch = await createChannel(name, workspaceId)
+      setChannels((prev) => [...prev, ch])
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to create channel'
+      alert(message)
+    } finally {
+      setCreating(false)
+    }
   }, [])
 
   if (loading) {
@@ -76,6 +110,7 @@ export default function Dashboard() {
         selectedWorkspace={selectedWorkspace}
         selectedChannel={selectedChannel}
         connected={connected}
+        creating={creating}
         onSelectWorkspace={handleSelectWorkspace}
         onSelectChannel={setSelectedChannel}
         onCreateWorkspace={handleCreateWorkspace}
@@ -92,7 +127,7 @@ export default function Dashboard() {
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center bg-gray-100 text-gray-500">
-            Select a channel
+            {selectedWorkspace ? 'Select a channel' : 'Select a workspace'}
           </div>
         )}
       </main>

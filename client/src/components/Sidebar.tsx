@@ -10,6 +10,7 @@ interface SidebarProps {
   selectedWorkspace: Workspace | null
   selectedChannel: Channel | null
   connected: boolean
+  creating: boolean
   onSelectWorkspace: (ws: Workspace) => void
   onSelectChannel: (ch: Channel) => void
   onCreateWorkspace: (name: string) => Promise<void>
@@ -18,7 +19,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({
-  workspaces, channels, selectedWorkspace, selectedChannel, connected,
+  workspaces, channels, selectedWorkspace, selectedChannel, connected, creating,
   onSelectWorkspace, onSelectChannel,
   onCreateWorkspace, onJoinWorkspace, onCreateChannel,
 }: SidebarProps) {
@@ -33,7 +34,7 @@ export default function Sidebar({
 
   const handleCreateWs = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!wsName.trim()) return
+    if (!wsName.trim() || creating) return
     await onCreateWorkspace(wsName)
     setWsName('')
     setShowNewWs(false)
@@ -41,7 +42,7 @@ export default function Sidebar({
 
   const handleJoin = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!inviteCode.trim()) return
+    if (!inviteCode.trim() || creating) return
     await onJoinWorkspace(inviteCode)
     setInviteCode('')
     setShowJoin(false)
@@ -49,7 +50,7 @@ export default function Sidebar({
 
   const handleCreateCh = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!chName.trim() || !selectedWorkspace) return
+    if (!chName.trim() || !selectedWorkspace || creating) return
     await onCreateChannel(chName, selectedWorkspace.id)
     setChName('')
     setShowNewCh(false)
@@ -74,14 +75,14 @@ export default function Sidebar({
             </h2>
             <div className="flex gap-1">
               <button
-                onClick={() => setShowNewWs(true)}
+                onClick={() => { setShowNewWs(true); setShowJoin(false) }}
                 className="text-xs text-gray-400 hover:text-white"
                 title="New workspace"
               >
                 +
               </button>
               <button
-                onClick={() => setShowJoin(true)}
+                onClick={() => { setShowJoin(true); setShowNewWs(false) }}
                 className="text-xs text-gray-400 hover:text-white"
                 title="Join workspace"
               >
@@ -98,10 +99,11 @@ export default function Sidebar({
                 placeholder="Workspace name"
                 className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                 autoFocus
+                disabled={creating}
               />
               <div className="flex gap-1">
-                <button type="submit" className="text-xs bg-indigo-600 px-2 py-1 rounded">
-                  Create
+                <button type="submit" disabled={creating} className="text-xs bg-indigo-600 px-2 py-1 rounded disabled:opacity-50">
+                  {creating ? 'Creating...' : 'Create'}
                 </button>
                 <button type="button" onClick={() => setShowNewWs(false)} className="text-xs text-gray-400">
                   Cancel
@@ -118,10 +120,11 @@ export default function Sidebar({
                 placeholder="Invite code"
                 className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                 autoFocus
+                disabled={creating}
               />
               <div className="flex gap-1">
-                <button type="submit" className="text-xs bg-indigo-600 px-2 py-1 rounded">
-                  Join
+                <button type="submit" disabled={creating} className="text-xs bg-indigo-600 px-2 py-1 rounded disabled:opacity-50">
+                  {creating ? 'Joining...' : 'Join'}
                 </button>
                 <button type="button" onClick={() => setShowJoin(false)} className="text-xs text-gray-400">
                   Cancel
@@ -175,10 +178,11 @@ export default function Sidebar({
                   placeholder="Channel name"
                   className="w-full p-1.5 text-sm text-gray-900 bg-white rounded mb-1"
                   autoFocus
+                  disabled={creating}
                 />
                 <div className="flex gap-1">
-                  <button type="submit" className="text-xs bg-indigo-600 px-2 py-1 rounded">
-                    Create
+                  <button type="submit" disabled={creating} className="text-xs bg-indigo-600 px-2 py-1 rounded disabled:opacity-50">
+                    {creating ? 'Creating...' : 'Create'}
                   </button>
                   <button type="button" onClick={() => setShowNewCh(false)} className="text-xs text-gray-400">
                     Cancel
