@@ -1,13 +1,23 @@
-import { createClient, type RedisClientType } from 'redis';
+import Redis from 'ioredis';
 import { config } from '../config';
 
-let client: RedisClientType | null = null;
+let client: Redis | null = null;
 let connected = false;
 
 export function connectRedis() {
   try {
-    client = createClient({ url: config.redisUrl, socket: { connectTimeout: 3000, reconnectStrategy: false } }) as RedisClientType;
+    client = new Redis(config.redisUrl, {
+      maxRetriesPerRequest: 1,
+      retryStrategy(times) {
+        if (times > 3) return null;
+        return Math.min(times * 200, 1000);
+      },
+      lazyConnect: true,
+      connectTimeout: 3000,
+    });
+
     client.on('error', () => {});
+
     client.connect().then(() => {
       connected = true;
       console.log('✅ Redis connected (cache)');
@@ -23,7 +33,7 @@ export function connectRedis() {
 
 export async function setUserOnline(userId: string) {
   if (!connected || !client) return;
-  await client.set(`user:online:${userId}`, '1', { EX: 30 }).catch(() => {});
+  await client.set(`user:online:${userId}`, '1', 'EX', 30).catch(() => {});
 }
 
 export async function setUserOffline(userId: string) {
