@@ -1,31 +1,44 @@
-import { createClient } from 'redis';
+import { createClient, type RedisClientType } from 'redis';
 import { config } from '../config';
 
-export const redisClient = createClient({ url: config.redisUrl });
+let client: RedisClientType | null = null;
+let connected = false;
 
-redisClient.on('error', (err) => {
-  console.warn('⚠️  Redis cache error:', err.message);
-});
-
-export async function connectRedis() {
-  await redisClient.connect();
-  console.log('✅ Redis connected (cache)');
+export function connectRedis() {
+  try {
+    client = createClient({ url: config.redisUrl, socket: { connectTimeout: 3000, reconnectStrategy: false } }) as RedisClientType;
+    client.on('error', () => {});
+    client.connect().then(() => {
+      connected = true;
+      console.log('✅ Redis connected (cache)');
+    }).catch(() => {
+      client = null;
+      console.warn('⚠️  Redis unavailable (presence features disabled)');
+    });
+  } catch {
+    client = null;
+    console.warn('⚠️  Redis unavailable (presence features disabled)');
+  }
 }
 
 export async function setUserOnline(userId: string) {
-  await redisClient.set(`user:online:${userId}`, '1', { EX: 30 });
+  if (!connected || !client) return;
+  await client.set(`user:online:${userId}`, '1', { EX: 30 }).catch(() => {});
 }
 
 export async function setUserOffline(userId: string) {
-  await redisClient.del(`user:online:${userId}`);
+  if (!connected || !client) return;
+  await client.del(`user:online:${userId}`).catch(() => {});
 }
 
 export async function isUserOnline(userId: string): Promise<boolean> {
-  const val = await redisClient.get(`user:online:${userId}`);
+  if (!connected || !client) return false;
+  const val = await client.get(`user:online:${userId}`).catch(() => null);
   return val !== null;
 }
 
 export async function getOnlineUserIds(): Promise<string[]> {
-  const keys = await redisClient.keys('user:online:*');
+  if (!connected || !client) return [];
+  const keys = await client.keys('user:online:*').catch(() => [] as string[]);
   return keys.map((k) => k.replace('user:online:', ''));
 }

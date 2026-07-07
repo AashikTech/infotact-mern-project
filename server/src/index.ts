@@ -11,6 +11,7 @@ import workspaceRoutes from './routes/workspaceRoutes';
 import channelRoutes from './routes/channelRoutes';
 import messageRoutes from './routes/messageRoutes';
 import { initSockets } from './sockets';
+import { connectRedis } from './utils/cache';
 
 const app = express();
 
@@ -47,6 +48,7 @@ mongoose
   .connect(config.mongoUri)
   .then(async () => {
     console.log('✅ MongoDB connected');
+    connectRedis();
     await initSockets(server);
     server.listen(config.port, () => {
       console.log(`🚀 Server running on http://localhost:${config.port}`);
