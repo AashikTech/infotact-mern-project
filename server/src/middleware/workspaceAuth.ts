@@ -5,7 +5,7 @@ import { Channel } from '../models/Channel';
 export async function requireWorkspaceMember(req: Request, res: Response, next: NextFunction) {
   try {
     const userId = (req as any).userId;
-    const workspaceId = req.body.workspaceId || req.params.workspaceId;
+    const workspaceId = req.body?.workspaceId || req.params.workspaceId;
 
     console.log('[Auth] requireWorkspaceMember:', { userId, workspaceId });
 
