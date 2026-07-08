@@ -93,6 +93,10 @@ export default function Dashboard() {
     try {
       const ws = await createWorkspace(name)
       setWorkspaces((prev) => [...prev, ws])
+      setSelectedWorkspace(ws)
+      localStorage.setItem(STORAGE_KEYS.workspace, ws.id)
+      const chs = await getChannels(ws.id)
+      setChannels(chs)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to create workspace'
       alert(message)
@@ -109,6 +113,10 @@ export default function Dashboard() {
         if (prev.some((w) => w.id === ws.id)) return prev
         return [...prev, ws]
       })
+      setSelectedWorkspace(ws)
+      localStorage.setItem(STORAGE_KEYS.workspace, ws.id)
+      const chs = await getChannels(ws.id)
+      setChannels(chs)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to join workspace'
       alert(message)

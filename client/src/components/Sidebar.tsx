@@ -142,28 +142,44 @@ export default function Sidebar({
               const role = member?.role
 
               return (
-                <button
-                  key={ws.id}
-                  onClick={() => onSelectWorkspace(ws)}
-                  className={`w-full text-left p-2 rounded text-sm transition-colors ${
-                    selectedWorkspace?.id === ws.id
-                      ? 'bg-indigo-600'
-                      : 'hover:bg-gray-700'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="truncate"># {ws.name}</span>
-                    {role && (
-                      <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ml-1 ${
-                        role === 'owner' ? 'bg-yellow-600 text-yellow-100' :
-                        role === 'admin' ? 'bg-blue-600 text-blue-100' :
-                        'bg-gray-600 text-gray-300'
-                      }`}>
-                        {role}
-                      </span>
-                    )}
-                  </div>
-                </button>
+                <div key={ws.id}>
+                  <button
+                    onClick={() => onSelectWorkspace(ws)}
+                    className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                      selectedWorkspace?.id === ws.id
+                        ? 'bg-indigo-600'
+                        : 'hover:bg-gray-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="truncate"># {ws.name}</span>
+                      {role && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ml-1 ${
+                          role === 'owner' ? 'bg-yellow-600 text-yellow-100' :
+                          role === 'admin' ? 'bg-blue-600 text-blue-100' :
+                          'bg-gray-600 text-gray-300'
+                        }`}>
+                          {role}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                  {selectedWorkspace?.id === ws.id && (role === 'owner' || role === 'admin') && (
+                    <div className="mt-1 px-2 py-1 bg-gray-800 rounded flex items-center justify-between">
+                      <span className="text-xs text-gray-400 truncate">Invite: {ws.inviteCode}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigator.clipboard.writeText(ws.inviteCode)
+                        }}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 ml-2 shrink-0"
+                        title="Copy invite code"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  )}
+                </div>
               )
             })}
             {workspaces.length === 0 && (
