@@ -4,7 +4,7 @@ import { clean } from '../utils/transform';
 
 export async function getDocument(req: Request, res: Response) {
   try {
-    const { workspaceId } = req.params;
+    const workspaceId = req.params.workspaceId as string;
     let doc = await DocModel.findOne({ workspaceId });
     if (!doc) {
       doc = await DocModel.create({ workspaceId, content: '' });
@@ -17,7 +17,7 @@ export async function getDocument(req: Request, res: Response) {
 
 export async function updateDocument(req: Request, res: Response) {
   try {
-    const { workspaceId } = req.params;
+    const workspaceId = req.params.workspaceId as string;
     const { content } = req.body;
 
     const doc = await DocModel.findOneAndUpdate(

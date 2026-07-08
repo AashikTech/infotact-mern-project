@@ -19,7 +19,7 @@ const app = express();
 
 app.use(cors({ origin: config.clientUrl }));
 app.use(express.json());
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
 app.get('/', (_req, res) => {
   res.json({ message: 'Collaboration Workspace API' });

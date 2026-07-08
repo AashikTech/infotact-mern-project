@@ -112,6 +112,24 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     }
   }
 
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items
+    if (!items) return
+
+    const imageFiles: File[] = []
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile()
+        if (file) imageFiles.push(file)
+      }
+    }
+
+    if (imageFiles.length > 0) {
+      e.preventDefault()
+      handleFiles(imageFiles)
+    }
+  }
+
   const send = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault()
     if (!text.trim() && pendingFiles.length === 0) return
@@ -224,7 +242,8 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
                 send(e)
               }
             }}
-            placeholder="Type a message... (Markdown supported, Shift+Enter for new line)"
+            onPaste={handlePaste}
+            placeholder="Type a message... (Ctrl+V to paste images)"
             rows={1}
             className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
           />

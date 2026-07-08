@@ -9,8 +9,12 @@ import crypto from 'crypto';
 
 const router = Router();
 
+const uploadsDir = path.join(process.cwd(), 'uploads');
+
 const storage = multer.diskStorage({
-  destination: path.join(__dirname, '../../uploads'),
+  destination: (_req, _file, cb) => {
+    cb(null, uploadsDir);
+  },
   filename: (_req, file, cb) => {
     const ext = path.extname(file.originalname);
     const name = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
@@ -55,6 +59,17 @@ router.get(
   getByChannel
 );
 
-router.post('/upload', upload.single('file'), uploadFile);
+router.post('/upload', upload.single('file'), (err: any, req: any, res: any, next: any) => {
+  if (err instanceof multer.MulterError) {
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Max size is 10MB.' });
+    }
+    return res.status(400).json({ error: err.message });
+  }
+  if (err) {
+    return res.status(400).json({ error: err.message || 'Upload failed' });
+  }
+  next();
+}, uploadFile);
 
 export default router;
