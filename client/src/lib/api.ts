@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Workspace, Channel, Message, Attachment } from '../types'
+import type { Workspace, Channel, Message, Attachment, WorkspaceDocument } from '../types'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '',
@@ -38,3 +38,9 @@ export const uploadFile = (file: File) => {
     headers: { 'Content-Type': 'multipart/form-data' },
   }).then((r) => r.data)
 }
+
+export const getDocument = (workspaceId: string) =>
+  api.get<WorkspaceDocument>(`/api/docs/${workspaceId}`).then((r) => r.data)
+
+export const updateDocument = (workspaceId: string, content: string) =>
+  api.put<WorkspaceDocument>(`/api/docs/${workspaceId}`, { content }).then((r) => r.data)

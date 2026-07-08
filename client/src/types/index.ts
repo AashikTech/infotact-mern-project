@@ -1,3 +1,10 @@
+export type MemberRole = 'owner' | 'admin' | 'member'
+
+export interface WorkspaceMember {
+  userId: string
+  role: MemberRole
+}
+
 export interface Attachment {
   url: string
   filename: string
@@ -16,7 +23,7 @@ export interface Workspace {
   id: string
   name: string
   inviteCode: string
-  members: string[]
+  members: WorkspaceMember[]
 }
 
 export interface Channel {
@@ -32,4 +39,11 @@ export interface Message {
   channelId: string
   attachments?: Attachment[]
   createdAt: string
+}
+
+export interface WorkspaceDocument {
+  id: string
+  workspaceId: string
+  content: string
+  updatedAt: string
 }

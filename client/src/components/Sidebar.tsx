@@ -32,6 +32,9 @@ export default function Sidebar({
   const [inviteCode, setInviteCode] = useState('')
   const [chName, setChName] = useState('')
 
+  const currentMember = selectedWorkspace?.members.find((m) => m.userId === user?.id)
+  const canManageChannels = currentMember?.role === 'owner' || currentMember?.role === 'admin'
+
   const handleCreateWs = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!wsName.trim() || creating) return
@@ -134,20 +137,35 @@ export default function Sidebar({
           )}
 
           <div className="space-y-1">
-            {workspaces.map((ws) => (
-              <button
-                key={ws.id}
-                onClick={() => onSelectWorkspace(ws)}
-                className={`w-full text-left p-2 rounded text-sm transition-colors ${
-                  selectedWorkspace?.id === ws.id
-                    ? 'bg-indigo-600'
-                    : 'hover:bg-gray-700'
-                }`}
-              >
-                <span># {ws.name}</span>
-                <span className="text-xs text-gray-500 ml-1">{ws.inviteCode}</span>
-              </button>
-            ))}
+            {workspaces.map((ws) => {
+              const member = ws.members.find((m) => m.userId === user?.id)
+              const role = member?.role
+
+              return (
+                <button
+                  key={ws.id}
+                  onClick={() => onSelectWorkspace(ws)}
+                  className={`w-full text-left p-2 rounded text-sm transition-colors ${
+                    selectedWorkspace?.id === ws.id
+                      ? 'bg-indigo-600'
+                      : 'hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="truncate"># {ws.name}</span>
+                    {role && (
+                      <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ml-1 ${
+                        role === 'owner' ? 'bg-yellow-600 text-yellow-100' :
+                        role === 'admin' ? 'bg-blue-600 text-blue-100' :
+                        'bg-gray-600 text-gray-300'
+                      }`}>
+                        {role}
+                      </span>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
             {workspaces.length === 0 && (
               <p className="text-xs text-gray-500">No workspaces yet</p>
             )}
@@ -161,16 +179,18 @@ export default function Sidebar({
               <h2 className="text-xs font-semibold uppercase text-gray-400 tracking-wider">
                 Channels
               </h2>
-              <button
-                onClick={() => setShowNewCh(true)}
-                className="text-xs text-gray-400 hover:text-white"
-                title="New channel"
-              >
-                +
-              </button>
+              {canManageChannels && (
+                <button
+                  onClick={() => setShowNewCh(true)}
+                  className="text-xs text-gray-400 hover:text-white"
+                  title="New channel"
+                >
+                  +
+                </button>
+              )}
             </div>
 
-            {showNewCh && (
+            {showNewCh && canManageChannels && (
               <form onSubmit={handleCreateCh} className="mb-2">
                 <input
                   value={chName}

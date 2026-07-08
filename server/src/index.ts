@@ -11,6 +11,7 @@ import authRoutes from './routes/authRoutes';
 import workspaceRoutes from './routes/workspaceRoutes';
 import channelRoutes from './routes/channelRoutes';
 import messageRoutes from './routes/messageRoutes';
+import docRoutes from './routes/docRoutes';
 import { initSockets } from './sockets';
 import { connectRedis } from './utils/cache';
 
@@ -32,6 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/channels', channelRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/docs', docRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ error: 'Route not found' });

@@ -4,6 +4,7 @@ import { config } from '../config';
 import { verifyToken } from '../utils/jwt';
 import { setUserOnline, setUserOffline, getOnlineUserIds } from '../utils/cache';
 import { registerChatHandlers } from './chatHandlers';
+import { registerDocHandlers } from './docHandlers';
 import { attachRedisAdapter } from './redisAdapter';
 
 export async function initSockets(httpServer: http.Server) {
@@ -54,6 +55,7 @@ export async function initSockets(httpServer: http.Server) {
     // ---
 
     registerChatHandlers(io, socket);
+    registerDocHandlers(io, socket);
 
     socket.on('disconnect', () => {
       console.log(`🔌 Socket disconnected: ${userId}`);
