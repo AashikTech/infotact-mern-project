@@ -20,7 +20,9 @@ export async function createWorkspace(req: Request, res: Response) {
       members: [{ userId, role: 'owner' }],
       inviteCode,
     });
-    await Channel.create({ name: 'general', workspaceId: workspace._id });
+    console.log('[Workspace] Created workspace:', workspace._id.toString());
+    const channel = await Channel.create({ name: 'general', workspaceId: workspace._id });
+    console.log('[Workspace] Created general channel:', channel._id.toString(), 'for workspace:', workspace._id.toString());
 
     res.status(201).json(clean(workspace));
   } catch (err) {

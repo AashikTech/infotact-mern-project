@@ -92,12 +92,15 @@ export default function Dashboard() {
     setCreating(true)
     try {
       const ws = await createWorkspace(name)
+      console.log('[Dashboard] Workspace created:', ws)
       setWorkspaces((prev) => [...prev, ws])
       setSelectedWorkspace(ws)
       localStorage.setItem(STORAGE_KEYS.workspace, ws.id)
       const chs = await getChannels(ws.id)
+      console.log('[Dashboard] Channels fetched after create:', chs)
       setChannels(chs)
     } catch (err) {
+      console.error('[Dashboard] Error in handleCreateWorkspace:', err)
       const message = err instanceof Error ? err.message : 'Failed to create workspace'
       alert(message)
     } finally {

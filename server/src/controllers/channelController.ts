@@ -58,9 +58,12 @@ export async function deleteChannel(req: Request, res: Response) {
 export async function getChannelsByWorkspace(req: Request, res: Response) {
   try {
     const { workspaceId } = req.params;
+    console.log('[Channel] Fetching channels for workspace:', workspaceId);
     const channels = await Channel.find({ workspaceId });
+    console.log('[Channel] Found channels:', channels.length, channels.map(c => c.name));
     res.json(cleanMany(channels));
   } catch (err) {
+    console.error('[Channel] Error fetching channels:', err);
     res.status(500).json({ error: 'Server error' });
   }
 }
