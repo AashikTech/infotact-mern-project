@@ -12,6 +12,11 @@ export interface Attachment {
   size: number
 }
 
+export interface Reaction {
+  emoji: string
+  userIds: string[]
+}
+
 export interface User {
   id: string
   name: string
@@ -38,6 +43,7 @@ export interface Message {
   senderId: string | { id: string; name: string }
   channelId: string
   attachments?: Attachment[]
+  reactions?: Reaction[]
   createdAt: string
 }
 

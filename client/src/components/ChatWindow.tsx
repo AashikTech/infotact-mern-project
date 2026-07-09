@@ -52,15 +52,22 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     }
     const onTypingStart = ({ name }: { name: string }) => setTypingUser(name)
     const onTypingStop = () => setTypingUser(null)
+    const onReactionUpdate = ({ messageId, reactions }: { messageId: string; reactions: any[] }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === messageId ? { ...m, reactions } : m))
+      )
+    }
 
     socket.on('chat:message', onMessage)
     socket.on('typing:start', onTypingStart)
     socket.on('typing:stop', onTypingStop)
+    socket.on('reaction:update', onReactionUpdate)
 
     return () => {
       socket.off('chat:message', onMessage)
       socket.off('typing:start', onTypingStart)
       socket.off('typing:stop', onTypingStop)
+      socket.off('reaction:update', onReactionUpdate)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       sendTypingStop()
     }
@@ -116,17 +123,20 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
     const items = e.clipboardData?.items
     if (!items) return
 
-    const imageFiles: File[] = []
+    const files: File[] = []
     for (let i = 0; i < items.length; i++) {
-      if (items[i].type.startsWith('image/')) {
-        const file = items[i].getAsFile()
-        if (file) imageFiles.push(file)
+      const item = items[i]
+      if (item.kind === 'file') {
+        const file = item.getAsFile()
+        if (file) {
+          files.push(new File([file], file.name || `pasted-${Date.now()}`, { type: file.type }))
+        }
       }
     }
 
-    if (imageFiles.length > 0) {
+    if (files.length > 0) {
       e.preventDefault()
-      handleFiles(imageFiles)
+      handleFiles(files)
     }
   }
 
@@ -150,14 +160,29 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
       })
       setText('')
       setPendingFiles([])
-    } catch {
-      alert('Failed to upload files. Please try again.')
+    } catch (err: any) {
+      const msg = err?.response?.data?.error || err?.message || 'Failed to upload files. Please try again.'
+      alert(msg)
     } finally {
       setUploading(false)
       if (debounceRef.current) clearTimeout(debounceRef.current)
       sendTypingStop()
     }
   }
+
+  const handleReaction = useCallback((messageId: string, emoji: string) => {
+    const msg = messages.find((m) => m.id === messageId)
+    if (!msg) return
+
+    const existing = msg.reactions?.find((r) => r.emoji === emoji)
+    const hasReacted = existing?.userIds.includes(user.id)
+
+    if (hasReacted) {
+      socket.emit('reaction:remove', { messageId, emoji })
+    } else {
+      socket.emit('reaction:add', { messageId, emoji })
+    }
+  }, [messages, user.id, socket])
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`
@@ -183,7 +208,13 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
         {messages.map((msg) => {
           const senderId = typeof msg.senderId === 'string' ? msg.senderId : msg.senderId.id
           return (
-            <MessageBubble key={msg.id} message={msg} isOwn={senderId === user.id} />
+            <MessageBubble
+              key={msg.id}
+              message={msg}
+              isOwn={senderId === user.id}
+              currentUserId={user.id}
+              onReaction={handleReaction}
+            />
           )
         })}
         <div ref={bottomRef} />
@@ -218,6 +249,7 @@ export default function ChatWindow({ channelId, user }: ChatWindowProps) {
             ref={fileInputRef}
             className="hidden"
             multiple
+            accept="image/png,image/jpeg,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
             onChange={(e) => {
               if (e.target.files) handleFiles(e.target.files)
               e.target.value = ''

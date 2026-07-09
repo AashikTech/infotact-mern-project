@@ -34,9 +34,7 @@ export const getMessages = (channelId: string) =>
 export const uploadFile = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return api.post<Attachment>('/api/messages/upload', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }).then((r) => r.data)
+  return api.post<Attachment>('/api/messages/upload', formData).then((r) => r.data)
 }
 
 export const getDocument = (workspaceId: string) =>
